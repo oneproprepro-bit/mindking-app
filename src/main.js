@@ -1771,6 +1771,7 @@ async function syncChildData() {
                 braises_half: state.sulfurHalf || 0,
                 coherence_cooldown_until: state.souffleCoherenceLastTime ? new Date(state.souffleCoherenceLastTime).toISOString() : null,
                 background_pref: state.selectedBackground,
+                onboarded: state.selectedChild.onboarded ?? false,
                 last_connection: new Date().toISOString()
             })
             .eq('id', state.selectedChild.id);
