@@ -556,10 +556,10 @@ function renderPinLogin() {
         </div>
         
         <div class="pin-input-group">
-          <input type="tel" maxlength="1" class="pin-input" id="pin-0" />
-          <input type="tel" maxlength="1" class="pin-input" id="pin-1" />
-          <input type="tel" maxlength="1" class="pin-input" id="pin-2" />
-          <input type="tel" maxlength="1" class="pin-input" id="pin-3" />
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-0" />
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-1" />
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-2" />
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-3" />
         </div>
 
         ${state.pinError ? `<div class="auth-error">${escapeHtml(state.pinError)}</div>` : ''}
@@ -585,9 +585,11 @@ function attachPinHandlers() {
     }
     inputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (!/^\\d*$/.test(val)) { e.target.value = ''; return; }
-            if (val.length === 1 && index < inputs.length - 1) inputs[index + 1].focus();
+            e.target.value = e.target.value.replace(/\D/g, '');
+            if (e.target.value.length === 1) {
+                const next = e.target.nextElementSibling;
+                if (next && next.tagName === 'INPUT') next.focus();
+            }
         });
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && !e.target.value && index > 0) inputs[index - 1].focus();
@@ -612,18 +614,18 @@ function renderSettings() {
           <div class="pin-setup-box">
             <div style="margin-bottom: 15px; font-weight: bold; color: var(--anchor);">Nouveau code PIN à 4 chiffres :</div>
             <div class="pin-input-group" style="margin-bottom: 20px;">
-              <input type="tel" maxlength="1" class="pin-input" id="pin-0" />
-              <input type="tel" maxlength="1" class="pin-input" id="pin-1" />
-              <input type="tel" maxlength="1" class="pin-input" id="pin-2" />
-              <input type="tel" maxlength="1" class="pin-input" id="pin-3" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-0" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-1" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-2" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-3" />
             </div>
             
             <div style="margin-bottom: 15px; font-weight: bold; color: var(--anchor);">Confirmez le PIN :</div>
             <div class="pin-input-group">
-              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-0" />
-              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-1" />
-              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-2" />
-              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-3" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-conf-0" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-conf-1" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-conf-2" />
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-input" id="pin-conf-3" />
             </div>
             
             ${state.pinError ? `<div class="auth-error" style="margin-top:15px;">${escapeHtml(state.pinError)}</div>` : ''}
@@ -661,12 +663,14 @@ function attachSettingsPinHandlers() {
         }
         inputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
-                const val = e.target.value;
-                if (!/^\\d*$/.test(val)) { e.target.value = ''; return; }
-                if (val.length === 1 && index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                } else if (val.length === 1 && prefix === 'pin' && index === 3) {
-                    document.getElementById('pin-conf-0')?.focus();
+                e.target.value = e.target.value.replace(/\D/g, '');
+                if (e.target.value.length === 1) {
+                    const next = e.target.nextElementSibling;
+                    if (next && next.tagName === 'INPUT') {
+                        next.focus();
+                    } else if (prefix === 'pin' && index === 3) {
+                        document.getElementById('pin-conf-0')?.focus();
+                    }
                 }
             });
             input.addEventListener('keydown', (e) => {
