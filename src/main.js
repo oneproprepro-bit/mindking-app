@@ -2077,32 +2077,43 @@ window.stopSouffle = stopSouffle;
 window.thawHeart = thawHeart;
 
 // ─── Boot ───
-document.addEventListener('DOMContentLoaded', () => {
-    // Écouteur unique pour tous les changements d'auth (initial, login, logout, refresh)
+document.addEventListener('DOMContentLoaded', async () => {
+
+    // 1. Récupérer la session existante immédiatement
+    const { data: { session: initialSession } } = await supabase.auth.getSession();
+
+    if (initialSession) {
+        state.user = initialSession.user;
+        if (state.children === null) {
+            await loadChildren();
+        }
+        if (state.children && state.children.length === 1 && !state.selectedChild) {
+            loadChildData(state.children[0].id);
+        }
+    } else {
+        state.user = null;
+        state.children = null;
+        state.selectedChild = null;
+    }
+
+    state.authLoading = false;
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) loadingScreen.remove();
+    render();
+
+    // 2. Garder onAuthStateChange pour les changements futurs (login/logout)
     supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session) {
+        // Ne traiter que les vrais changements (pas le chargement initial)
+        if (session && !state.user) {
             state.user = session.user;
-
-            // On recharge les enfants si on ne l'a pas encore fait
-            if (state.children === null) {
-                await loadChildren();
-            }
-
-            // Auto-sélection si un seul enfant et aucun sélectionné
-            if (state.children && state.children.length === 1 && !state.selectedChild) {
-                loadChildData(state.children[0].id);
-            }
-        } else {
-            // Reset complet si déconnecté
+            if (state.children === null) await loadChildren();
+            render();
+        } else if (!session && state.user) {
             state.user = null;
             state.children = null;
             state.selectedChild = null;
+            render();
         }
-
-        state.authLoading = false;
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) loadingScreen.remove();
-        render();
     });
 
     startCoolingLoop();
