@@ -1694,6 +1694,7 @@ function loadChildData(childId) {
     if (!child) return;
 
     state.selectedChild = child;
+    localStorage.setItem('mindking-selected-child', childId);
 
     // Mapping complet vers les propriétés du state
     state.name = child.name || 'Alchimiste';
@@ -2087,6 +2088,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (state.children === null) {
             await loadChildren();
         }
+        const savedChildId = localStorage.getItem('mindking-selected-child');
+        if (savedChildId && state.children) {
+            const found = state.children.find(c => c.id === savedChildId);
+            if (found) loadChildData(savedChildId);
+        }
         if (state.children && state.children.length === 1 && !state.selectedChild) {
             loadChildData(state.children[0].id);
         }
@@ -2107,6 +2113,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (session && !state.user) {
             state.user = session.user;
             if (state.children === null) await loadChildren();
+            const savedChildId = localStorage.getItem('mindking-selected-child');
+            if (savedChildId && state.children) {
+                const found = state.children.find(c => c.id === savedChildId);
+                if (found) loadChildData(savedChildId);
+            }
             render();
         } else if (!session && state.user) {
             state.user = null;
