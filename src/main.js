@@ -103,6 +103,11 @@ const state = {
     selectedChild: null,
     authLoading: false,
     authError: null,
+    pinScreen: false,
+    pinLoading: false,
+    pinError: null,
+    settingsScreen: false,
+    pinSetupMode: null,
     plan: 'free',
     selectedBackground: 'default', // 'default' ou 'neutre'
 
@@ -494,6 +499,10 @@ function renderAuth() {
           <button class="btn-pill btn-outline" onclick="handleSignup()" ${state.authLoading ? 'disabled' : ''}>
             Créer un compte
           </button>
+
+          <button class="btn-pill btn-pin" id="btn-pin-login" onclick="showPinScreen()" style="margin-top: 15px;">
+            🔢 Connexion par code PIN
+          </button>
         </div>
       </div>
     </div>
@@ -508,9 +517,10 @@ function renderSelection() {
 
     return `
     <div class="selection-screen">
-      <div class="selection-header">
+      <div class="selection-header" style="position: relative;">
         <h1 class="selection-title">Qui va pratiquer ?</h1>
         <p class="selection-subtitle">Choisissez un profil pour commencer</p>
+        <button class="btn-settings-icon" onclick="showSettings()" title="Paramètres">⚙️</button>
       </div>
 
       <div class="children-grid">
@@ -528,6 +538,148 @@ function renderSelection() {
       <button class="btn-logout-minimal" onclick="logout()">Déconnexion</button>
     </div>
   `;
+}
+
+// ═══════ RENDER: PIN LOGIN ═══════
+function renderPinLogin() {
+    return `
+    <div class="auth-screen">
+      <div class="auth-card">
+        <div class="auth-logo-wrap">
+          <img src="${logoMindking}" class="auth-logo" alt="Logo MindKing" />
+        </div>
+        <h2 class="auth-title">Connexion Enfant</h2>
+        <p class="auth-subtitle">Entrez l'email du parent et le code PIN</p>
+
+        <div class="auth-form" style="margin-bottom: 20px;">
+          <input type="email" id="pin-email" placeholder="Email du parent" class="auth-input" />
+        </div>
+        
+        <div class="pin-input-group">
+          <input type="tel" maxlength="1" class="pin-input" id="pin-0" />
+          <input type="tel" maxlength="1" class="pin-input" id="pin-1" />
+          <input type="tel" maxlength="1" class="pin-input" id="pin-2" />
+          <input type="tel" maxlength="1" class="pin-input" id="pin-3" />
+        </div>
+
+        ${state.pinError ? `<div class="auth-error">${escapeHtml(state.pinError)}</div>` : ''}
+
+        <div class="auth-actions" style="margin-top: 25px;">
+          <button class="btn-pill btn-pin" onclick="handlePinLogin()" ${state.pinLoading ? 'disabled' : ''}>
+            ${state.pinLoading ? 'Vérification...' : 'Se connecter'}
+          </button>
+          <button class="btn-pill btn-outline" onclick="hidePinScreen()" ${state.pinLoading ? 'disabled' : ''}>
+            Retour
+          </button>
+        </div>
+      </div>
+    </div>
+    `;
+}
+
+function attachPinHandlers() {
+    const inputs = [];
+    for(let i=0; i<4; i++) {
+        const el = document.getElementById(`pin-${i}`);
+        if(el) inputs.push(el);
+    }
+    inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (!/^\\d*$/.test(val)) { e.target.value = ''; return; }
+            if (val.length === 1 && index < inputs.length - 1) inputs[index + 1].focus();
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) inputs[index - 1].focus();
+        });
+    });
+}
+
+// ═══════ RENDER: SETTINGS ═══════
+function renderSettings() {
+    return `
+    <div class="settings-screen page-content">
+      <div class="settings-header">
+        <h2 class="auth-title">Paramètres</h2>
+        <p class="auth-subtitle">Espace Parent</p>
+      </div>
+
+      <div class="settings-section">
+        <h3 class="settings-section-title">Code PIN famille</h3>
+        <p class="settings-section-desc">Permet à vos enfants de se connecter sans votre mot de passe principal.</p>
+        
+        ${state.pinSetupMode ? `
+          <div class="pin-setup-box">
+            <div style="margin-bottom: 15px; font-weight: bold; color: var(--anchor);">Nouveau code PIN à 4 chiffres :</div>
+            <div class="pin-input-group" style="margin-bottom: 20px;">
+              <input type="tel" maxlength="1" class="pin-input" id="pin-0" />
+              <input type="tel" maxlength="1" class="pin-input" id="pin-1" />
+              <input type="tel" maxlength="1" class="pin-input" id="pin-2" />
+              <input type="tel" maxlength="1" class="pin-input" id="pin-3" />
+            </div>
+            
+            <div style="margin-bottom: 15px; font-weight: bold; color: var(--anchor);">Confirmez le PIN :</div>
+            <div class="pin-input-group">
+              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-0" />
+              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-1" />
+              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-2" />
+              <input type="tel" maxlength="1" class="pin-input" id="pin-conf-3" />
+            </div>
+            
+            ${state.pinError ? `<div class="auth-error" style="margin-top:15px;">${escapeHtml(state.pinError)}</div>` : ''}
+            
+            <div class="auth-actions" style="margin-top: 25px;">
+              <button class="btn-pill btn-pin" onclick="saveFamilyPin()" ${state.pinLoading ? 'disabled' : ''}>
+                ${state.pinLoading ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+              <button class="btn-pill btn-outline" onclick="cancelPinSetup()">Annuler</button>
+            </div>
+          </div>
+        ` : `
+          <div class="auth-actions">
+            <button class="btn-pill btn-pin" onclick="startPinSetup()">
+              Configurer le code PIN
+            </button>
+          </div>
+        `}
+      </div>
+
+      <div class="settings-footer">
+        <button class="btn-pill btn-outline" onclick="hideSettings()">Retour</button>
+        <button class="btn-logout-minimal" style="margin-top: 15px; width: 100%;" onclick="logout()">Déconnexion</button>
+      </div>
+    </div>
+    `;
+}
+
+function attachSettingsPinHandlers() {
+    const attachGroup = (prefix) => {
+        const inputs = [];
+        for(let i=0; i<4; i++) {
+            const el = document.getElementById(`${prefix}-${i}`);
+            if(el) inputs.push(el);
+        }
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const val = e.target.value;
+                if (!/^\\d*$/.test(val)) { e.target.value = ''; return; }
+                if (val.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                } else if (val.length === 1 && prefix === 'pin' && index === 3) {
+                    document.getElementById('pin-conf-0')?.focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    inputs[index - 1].focus();
+                } else if (e.key === 'Backspace' && !e.target.value && prefix === 'pin-conf' && index === 0) {
+                    document.getElementById('pin-3')?.focus();
+                }
+            });
+        });
+    }
+    attachGroup('pin');
+    attachGroup('pin-conf');
 }
 
 // ═══════ RENDER: HOME ═══════
@@ -1806,13 +1958,131 @@ async function saveSession(type, duration, xpValue, completed) {
 }
 
 async function logout() {
-    await supabase.auth.signOut()
+    if (state.user && !state.user.isPinChild) {
+        await supabase.auth.signOut()
+    }
     state.user = null
     state.selectedChild = null
     state.children = []
     state.currentScreen = 'home'
     state.activeTab = 'home'
+    state.settingsScreen = false
+    state.pinScreen = false
     render()
+}
+
+function showPinScreen() {
+    state.pinScreen = true;
+    state.pinError = null;
+    render();
+}
+
+function hidePinScreen() {
+    state.pinScreen = false;
+    state.pinError = null;
+    render();
+}
+
+async function handlePinLogin() {
+    const email = document.getElementById('pin-email')?.value?.trim();
+    const pin = [0,1,2,3].map(i => document.getElementById(`pin-${i}`)?.value).join('');
+    
+    if (!email || pin.length !== 4) {
+        state.pinError = "Veuillez entrer un email et un PIN à 4 chiffres.";
+        render();
+        return;
+    }
+    
+    state.pinLoading = true;
+    state.pinError = null;
+    render();
+    
+    try {
+        const { data, error } = await supabase.functions.invoke('validate-pin', {
+            body: { parentEmail: email, pin: pin }
+        });
+        
+        if (error || !data || !data.success) {
+            state.pinError = data?.error || error?.message || "PIN ou email incorrect.";
+        } else {
+            state.user = data.user;
+            state.children = data.children;
+            state.pinScreen = false;
+        }
+    } catch (err) {
+        console.error('[MINDKING] PIN Login Error:', err);
+        state.pinError = "Une erreur de connexion est survenue.";
+    } finally {
+        state.pinLoading = false;
+        render();
+    }
+}
+
+function showSettings() {
+    state.settingsScreen = true;
+    state.pinSetupMode = null;
+    state.pinError = null;
+    render();
+}
+
+function hideSettings() {
+    state.settingsScreen = false;
+    state.pinSetupMode = null;
+    state.pinError = null;
+    render();
+}
+
+function startPinSetup() {
+    state.pinSetupMode = true;
+    state.pinError = null;
+    render();
+}
+
+function cancelPinSetup() {
+    state.pinSetupMode = null;
+    state.pinError = null;
+    render();
+}
+
+async function saveFamilyPin() {
+    const pin = [0,1,2,3].map(i => document.getElementById(`pin-${i}`)?.value).join('');
+    const pinConf = [0,1,2,3].map(i => document.getElementById(`pin-conf-${i}`)?.value).join('');
+    
+    if (pin.length !== 4 || pinConf.length !== 4) {
+        state.pinError = "Le PIN doit contenir exactement 4 chiffres.";
+        render();
+        return;
+    }
+    if (pin !== pinConf) {
+        state.pinError = "Les codes PIN ne correspondent pas.";
+        render();
+        return;
+    }
+    
+    state.pinLoading = true;
+    state.pinError = null;
+    render();
+    
+    try {
+        // TODO: hasher en prod
+        const { error } = await supabase
+            .from('users')
+            .update({ family_pin: pin })
+            .eq('id', state.user.id);
+            
+        if (error) {
+            state.pinError = error.message;
+        } else {
+            showToast('Code PIN enregistré avec succès !', 'success');
+            state.pinSetupMode = null;
+        }
+    } catch (err) {
+        console.error('[MINDKING] Save PIN Error:', err);
+        state.pinError = "Une erreur est survenue.";
+    } finally {
+        state.pinLoading = false;
+        render();
+    }
 }
 
 
@@ -1879,8 +2149,20 @@ const screens = { home: renderHome, forge: renderForge, souffle: renderSouffle, 
 function render() {
     const app = document.getElementById('app');
 
+    if (state.pinScreen && !state.user) {
+        app.innerHTML = renderPinLogin();
+        attachPinHandlers();
+        return;
+    }
+
     if (!state.user) {
         app.innerHTML = renderAuth();
+        return;
+    }
+
+    if (state.settingsScreen) {
+        app.innerHTML = renderSettings();
+        if (state.pinSetupMode) attachSettingsPinHandlers();
         return;
     }
 
@@ -2063,6 +2345,14 @@ window.loginWithGoogle = loginWithGoogle;
 window.handleLogin = handleLogin;
 window.loginWithEmail = handleLogin;
 window.handleSignup = handleSignup;
+window.showPinScreen = showPinScreen;
+window.hidePinScreen = hidePinScreen;
+window.handlePinLogin = handlePinLogin;
+window.showSettings = showSettings;
+window.hideSettings = hideSettings;
+window.startPinSetup = startPinSetup;
+window.cancelPinSetup = cancelPinSetup;
+window.saveFamilyPin = saveFamilyPin;
 window.selectChild = selectChild;
 window.loadChildData = loadChildData;
 window.loadChildren = loadChildren;

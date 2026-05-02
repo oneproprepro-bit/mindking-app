@@ -828,6 +828,108 @@ body {
     background: transparent !important;
 }
 
+.stock.nav-icon-3d {
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+}
+
+/* ═══════ PIN LOGIN & SETTINGS ═══════ */
+.pin-input-group {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.pin-input {
+    width: 52px;
+    height: 64px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    border-radius: 12px;
+    border: 2px solid var(--trait);
+    background: white;
+    color: var(--anchor);
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: all 0.3s var(--ease);
+}
+
+.pin-input:focus {
+    outline: none;
+    border-color: var(--royal-gold);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-pin {
+    background: linear-gradient(135deg, #1E293B, #0F172A);
+    color: white;
+}
+
+.btn-pin:hover {
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.4);
+}
+
+.settings-screen {
+    padding: calc(var(--safe-top) + 20px) 20px 100px;
+    min-height: 100dvh;
+}
+
+.settings-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.settings-section {
+    background: var(--crystal-solid);
+    border: 1px solid var(--crystal);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px var(--shadow-md);
+    margin-bottom: 24px;
+}
+
+.settings-section-title {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--anchor);
+    margin-bottom: 8px;
+}
+
+.settings-section-desc {
+    font-size: 13px;
+    color: var(--color-cool-text);
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.btn-settings-icon {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: all 0.2s var(--ease);
+}
+
+.btn-settings-icon:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.1);
+}
+
 .stock-icon {
     width: 90px;
     height: 90px;
