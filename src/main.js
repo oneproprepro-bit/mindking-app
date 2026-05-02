@@ -2083,11 +2083,26 @@ window.thawHeart = thawHeart;
 
 // ─── Boot ───
 document.addEventListener('DOMContentLoaded', () => {
+    // Écran de chargement
+    const style = document.createElement('style');
+    style.textContent = '@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }';
+    document.head.appendChild(style);
+
+    document.body.innerHTML = `
+      <div id="loading-screen" style="
+        position:fixed;inset:0;
+        background:#F1F5F9;
+        display:flex;align-items:center;justify-content:center;
+        z-index:9999;">
+        <img src="/logo.png" style="width:120px;animation:pulse 1.5s infinite;" />
+      </div>
+    `;
+
     // Écouteur unique pour tous les changements d'auth (initial, login, logout, refresh)
     supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session) {
             state.user = session.user;
-            
+
             // On recharge les enfants si on ne l'a pas encore fait
             if (state.children === null) {
                 await loadChildren();
@@ -2105,6 +2120,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         state.authLoading = false;
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) loadingScreen.remove();
         render();
     });
 
