@@ -1965,6 +1965,7 @@ async function logout() {
     if (state.user && !state.user.isPinChild) {
         await supabase.auth.signOut()
     }
+    localStorage.removeItem('mindking-pin-session');
     state.user = null
     state.selectedChild = null
     state.children = []
@@ -2012,6 +2013,11 @@ async function handlePinLogin() {
             state.user = data.user;
             state.children = data.children;
             state.pinScreen = false;
+            
+            localStorage.setItem('mindking-pin-session', JSON.stringify({
+                user: state.user,
+                children: state.children
+            }));
         }
     } catch (err) {
         console.error('[MINDKING] PIN Login Error:', err);
@@ -2374,6 +2380,42 @@ window.thawHeart = thawHeart;
 
 // ─── Boot ───
 document.addEventListener('DOMContentLoaded', async () => {
+
+    const pinSession = localStorage.getItem('mindking-pin-session');
+    if (pinSession) {
+        try {
+            const parsed = JSON.parse(pinSession);
+            if (parsed.user?.isPinChild) {
+                state.user = parsed.user;
+                state.children = parsed.children;
+                // Restaurer l'enfant sélectionné
+                const savedChildId = localStorage.getItem('mindking-selected-child');
+                if (savedChildId && state.children) {
+                    const found = state.children.find(c => c.id === savedChildId);
+                    if (found) loadChildData(savedChildId);
+                }
+                state.authLoading = false;
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) loadingScreen.remove();
+                render();
+                // Ne pas continuer vers getSession()
+                // Enregistrer onAuthStateChange quand même pour logout
+                supabase.auth.onAuthStateChange(async (_event, session) => {
+                    if (!session && state.user) {
+                        state.user = null;
+                        state.children = null;
+                        state.selectedChild = null;
+                        localStorage.removeItem('mindking-pin-session');
+                        render();
+                    }
+                });
+                startCoolingLoop();
+                return;
+            }
+        } catch(e) {
+            localStorage.removeItem('mindking-pin-session');
+        }
+    }
 
     // 1. Récupérer la session existante immédiatement
     const { data: { session: initialSession } } = await supabase.auth.getSession();
