@@ -1965,6 +1965,7 @@ async function logout() {
     if (state.user && !state.user.isPinChild) {
         await supabase.auth.signOut()
     }
+    console.log('[Logout] suppression mindking-pin-session');
     localStorage.removeItem('mindking-pin-session');
     state.user = null
     state.selectedChild = null
@@ -2018,6 +2019,7 @@ async function handlePinLogin() {
                 user: state.user,
                 children: state.children
             }));
+            console.log('[PIN] session sauvegardée:', localStorage.getItem('mindking-pin-session'));
         }
     } catch (err) {
         console.error('[MINDKING] PIN Login Error:', err);
@@ -2381,6 +2383,7 @@ window.thawHeart = thawHeart;
 // ─── Boot ───
 document.addEventListener('DOMContentLoaded', async () => {
 
+    console.log('[Boot] lecture mindking-pin-session:', localStorage.getItem('mindking-pin-session'));
     const pinSession = localStorage.getItem('mindking-pin-session');
     if (pinSession) {
         try {
