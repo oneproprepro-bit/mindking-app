@@ -1962,10 +1962,18 @@ async function saveSession(type, duration, xpValue, completed) {
         created_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('sessions').insert(payload);
-
-    if (error) {
-        console.error('[MINDKING] Session save error:', error.message, error.details);
+    if (state.user?.isPinChild) {
+        const { error } = await supabase.functions.invoke('save-session', {
+            body: payload,
+            headers: {
+                'x-family-pin': state.user.familyPin,
+                'x-child-id': state.selectedChild.id,
+            }
+        });
+        if (error) console.error('[MINDKING] Session save error (PIN):', error.message);
+    } else {
+        const { error } = await supabase.from('sessions').insert(payload);
+        if (error) console.error('[MINDKING] Session save error:', error.message, error.details);
     }
 }
 
@@ -2020,9 +2028,10 @@ async function handlePinLogin() {
             state.pinError = data?.error || error?.message || "PIN ou email incorrect.";
         } else {
             state.user = data.user;
+            state.user.familyPin = pin;
             state.children = data.children;
             state.pinScreen = false;
-            
+
             localStorage.setItem('mindking-pin-session', JSON.stringify({
                 user: state.user,
                 children: state.children
