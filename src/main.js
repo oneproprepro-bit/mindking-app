@@ -1940,13 +1940,14 @@ async function syncChildData() {
     try {
         if (state.user?.isPinChild) {
             console.log('[SYNC] isPinChild:', state.user?.isPinChild, 'familyPin:', !!state.user?.familyPin, 'childId:', state.selectedChild?.id)
-            const { error } = await supabase.functions.invoke('sync-child', {
+            const { data, error } = await supabase.functions.invoke('sync-child', {
                 body: dataToSync,
                 headers: {
                     'x-family-pin': state.user.familyPin,
                     'x-child-id': state.selectedChild.id,
                 }
             });
+            console.log('[SYNC-CHILD] résultat:', JSON.stringify(data), 'erreur:', error?.message)
             if (error) {
                 console.error('[MINDKING] Sync error (PIN):', error.message);
                 showToast('Synchronisation échouée — vérifie ta connexion');
