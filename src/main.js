@@ -1917,32 +1917,48 @@ function getGradeString() {
 
 async function syncChildData() {
     if (!state.selectedChild) return;
-    try {
-        const { error } = await supabase
-            .from('children')
-            .update({
-                xp: state.xp,
-                daily_xp: state.dailyXp,
-                grade: getGradeString(),
-                heart_state: state.heartState,
-                temperature: Math.round(state.temperature),
-                temperature_reserve: Math.round(state.temperature_reserve),
-                perles_qty: state.mercuryQty,
-                braises_qty: state.sulfurQty,
-                crystal_qty: state.saltQty,
-                crystal_today: state.saltToday,
-                perles_half: state.mercuryHalf || 0,
-                braises_half: state.sulfurHalf || 0,
-                coherence_cooldown_until: state.souffleCoherenceLastTime ? new Date(state.souffleCoherenceLastTime).toISOString() : null,
-                background_pref: state.selectedBackground,
-                onboarded: state.selectedChild.onboarded ?? false,
-                last_connection: new Date().toISOString()
-            })
-            .eq('id', state.selectedChild.id);
 
-        if (error) {
-            console.error('[MINDKING] Sync error:', error.message);
-            showToast('Synchronisation échouée — vérifie ta connexion');
+    const dataToSync = {
+        xp: state.xp,
+        daily_xp: state.dailyXp,
+        grade: getGradeString(),
+        heart_state: state.heartState,
+        temperature: Math.round(state.temperature),
+        temperature_reserve: Math.round(state.temperature_reserve),
+        perles_qty: state.mercuryQty,
+        braises_qty: state.sulfurQty,
+        crystal_qty: state.saltQty,
+        crystal_today: state.saltToday,
+        perles_half: state.mercuryHalf || 0,
+        braises_half: state.sulfurHalf || 0,
+        coherence_cooldown_until: state.souffleCoherenceLastTime ? new Date(state.souffleCoherenceLastTime).toISOString() : null,
+        background_pref: state.selectedBackground,
+        onboarded: state.selectedChild.onboarded ?? false,
+        last_connection: new Date().toISOString()
+    };
+
+    try {
+        if (state.user?.isPinChild) {
+            const { error } = await supabase.functions.invoke('sync-child', {
+                body: dataToSync,
+                headers: {
+                    'x-family-pin': state.user.familyPin,
+                    'x-child-id': state.selectedChild.id,
+                }
+            });
+            if (error) {
+                console.error('[MINDKING] Sync error (PIN):', error.message);
+                showToast('Synchronisation échouée — vérifie ta connexion');
+            }
+        } else {
+            const { error } = await supabase
+                .from('children')
+                .update(dataToSync)
+                .eq('id', state.selectedChild.id);
+            if (error) {
+                console.error('[MINDKING] Sync error:', error.message);
+                showToast('Synchronisation échouée — vérifie ta connexion');
+            }
         }
     } catch (error) {
         console.error('[MINDKING] Sync error:', error);
