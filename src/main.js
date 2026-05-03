@@ -5,12 +5,12 @@
 
 import { supabase } from './supabase.js'
 import './style.css';
-import logoMindking from './assets/logo_mindking_trp.jpg';
-import fondHome from './assets/fond_home.png';
-import fondHomeNeutre from './assets/fond mindking neutre.png';
-import orbeForge from './assets/orbe-forge1_trp.png';
-import fondSouffle from './assets/fond_souffle_alchimique.png';
-import orbeSouffle from './assets/orbe_souffle_trp.png';
+import logoMindking from './assets/logo_mindking_trp.webp';
+import fondHome from './assets/fond_home.webp';
+import fondHomeNeutre from './assets/fond mindking neutre.webp';
+import orbeForge from './assets/orbe-forge1_trp.webp';
+import fondSouffle from './assets/fond_souffle_alchimique.webp';
+import orbeSouffle from './assets/orbe_souffle_trp.webp';
 import breathZenSrc from './assets/breath_zen.mp3';
 
 
@@ -704,7 +704,7 @@ function renderHome() {
         <div class="home-header">
           <div class="profile-info">
             <div class="avatar-wrap" style="width: 40px; height: 40px; margin-bottom: 0;">
-              <img src="/avatar.png" alt="Avatar" style="width: 100%; height: 100%;" />
+              <img src="/avatar.webp" alt="Avatar" style="width: 100%; height: 100%;" />
             </div>
             <div class="name-grade" style="font-weight: 800; font-size: 14px; color: var(--anchor); text-transform: uppercase; letter-spacing: 0.5px;">
               ${state.selectedChild ? state.selectedChild.name : 'MINDKING'} | <span style="color: var(--royal-gold);">${getGradeName(getGradeString())}</span>
@@ -1054,7 +1054,7 @@ function renderSouffle() {
 
       ${g.perlesText ? `
       <div class="reward-item" style="background: rgba(255,255,255,0.92);">
-        <img src="/pearl.png" style="width: 28px; height: 28px;" />
+        <img src="/pearl.webp" style="width: 28px; height: 28px;" />
         <span class="reward-text" style="font-size: 16px;">${g.perlesText}</span>
       </div>` : ''}
       
@@ -1230,12 +1230,12 @@ function renderSouffle() {
 function renderEcrin() {
     const hs = state.heartState;
     const heartImages = {
-        frozen: new URL('./assets/Coeur/coeurgélée_trp.png', import.meta.url).href,
-        cold: new URL('./assets/Coeur/coeurfroid_trp.png', import.meta.url).href,
-        awakening: new URL('./assets/Coeur/coeurréveil_trp.png', import.meta.url).href,
-        incandescent: new URL('./assets/Coeur/coeurIncandescent_trp.png', import.meta.url).href,
-        forge: new URL('./assets/Coeur/coeurForge_trp.png', import.meta.url).href,
-        ka: new URL('./assets/Coeur/coeurKA_trp.png', import.meta.url).href,
+        frozen: new URL('./assets/Coeur/coeurgélée_trp.webp', import.meta.url).href,
+        cold: new URL('./assets/Coeur/coeurfroid_trp.webp', import.meta.url).href,
+        awakening: new URL('./assets/Coeur/coeurréveil_trp.webp', import.meta.url).href,
+        incandescent: new URL('./assets/Coeur/coeurIncandescent_trp.webp', import.meta.url).href,
+        forge: new URL('./assets/Coeur/coeurForge_trp.webp', import.meta.url).href,
+        ka: new URL('./assets/Coeur/coeurKA_trp.webp', import.meta.url).href,
     };
     const heartConfig = {
         frozen: { emoji: '❄️', name: 'Gelé', color: '#93C5FD', desc: 'Inactivité > 24h — XP bloqué', bg: 'linear-gradient(135deg, #DBEAFE 0%, #93C5FD 100%)' },
@@ -1280,7 +1280,7 @@ function renderEcrin() {
           <div class="ecrin-temp">${Math.round(state.temperature)}°C</div>
           <div class="ecrin-reserve">Réserve : ${Math.round(state.temperature_reserve)}°C</div>
           ${canThaw ? `<button class="ecrin-thaw-btn" id="thaw-btn">
-            <img src="/pearl.png" alt="Perle" class="ecrin-thaw-pearl" /> Consommer 1 Perle — Dégeler
+            <img src="/pearl.webp" alt="Perle" class="ecrin-thaw-pearl" /> Consommer 1 Perle — Dégeler
           </button>` : ''}
           ${hs === 'frozen' && !canThaw ? `<div class="ecrin-no-pearl">Aucune Perle disponible — Respirez pour en gagner</div>` : ''}
         </div>
@@ -1303,21 +1303,21 @@ function renderEcrin() {
         <!-- Resources Overview -->
         <div class="ecrin-resources">
           <div class="ecrin-res-card">
-            <img src="/pearl.png" alt="Perle" class="ecrin-res-img" />
+            <img src="/pearl.webp" alt="Perle" class="ecrin-res-img" />
             <div class="ecrin-res-info">
               <span class="ecrin-res-value">${state.mercuryQty}</span>
               <span class="ecrin-res-label">Perles de Nacre</span>
             </div>
           </div>
           <div class="ecrin-res-card">
-            <img src="/braise.png" alt="Braise" class="ecrin-res-img" />
+            <img src="/braise.webp" alt="Braise" class="ecrin-res-img" />
             <div class="ecrin-res-info">
               <span class="ecrin-res-value">${state.sulfurQty}</span>
               <span class="ecrin-res-label">Braises</span>
             </div>
           </div>
           <div class="ecrin-res-card">
-            <img src="/salt.png" alt="Sel" class="ecrin-res-img" />
+            <img src="/salt.webp" alt="Sel" class="ecrin-res-img" />
             <div class="ecrin-res-info">
               <span class="ecrin-res-value">${state.saltQty}/7</span>
               <span class="ecrin-res-label">Grains de Sel</span>
@@ -1329,6 +1329,14 @@ function renderEcrin() {
         <div class="ecrin-states-section">
           <div class="section-label">Les 6 États du Cœur</div>
           <div class="ecrin-states-list">${statesList}</div>
+        </div>
+
+        <!-- Logout -->
+        <div style="padding: 8px 0 4px;">
+          <button class="btn-pill btn-outline" onclick="logout()"
+            style="width:100%; color:#F59E0B; border-color:#F59E0B;">
+            Se déconnecter
+          </button>
         </div>
       </div>
     </div>`;
@@ -2404,6 +2412,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Ne pas continuer vers getSession()
                 // Enregistrer onAuthStateChange quand même pour logout
                 supabase.auth.onAuthStateChange(async (_event, session) => {
+                    if (state.user?.isPinChild) return;
                     if (!session && state.user) {
                         state.user = null;
                         state.children = null;
@@ -2450,6 +2459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Garder onAuthStateChange pour les changements futurs (login/logout)
     supabase.auth.onAuthStateChange(async (_event, session) => {
         // Ne traiter que les vrais changements (pas le chargement initial)
+        if (state.user?.isPinChild) return;
         if (session && !state.user) {
             state.user = session.user;
             if (state.children === null) await loadChildren();
