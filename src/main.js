@@ -300,8 +300,7 @@ function addXp(amount) {
     state.dailyXp += gained;
     state.xp += gained;
 
-    updateGrade(); // Mise à jour du grade numérique pour l'UI
-    syncChildData(); // Envoi du nouveau grade (via getGradeString) à Supabase
+    updateGrade();
     return gained;
 }
 
