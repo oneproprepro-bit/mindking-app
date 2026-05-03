@@ -351,8 +351,6 @@ function addTemperature(gain) {
 
 function updateHeartState() {
     if (state.heartState === 'frozen') {
-        // Le coeur est gelé, la température n'a plus d'effet tant qu'il n'est pas dégelé
-        syncChildData();
         render();
         return;
     }
@@ -385,7 +383,6 @@ function updateHeartState() {
 
     state.heartState = HEARTS_ORDER[Math.min(calcIdx, maxIdx)];
 
-    syncChildData();
     render();
 }
 
