@@ -2424,7 +2424,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             const parsed = JSON.parse(pinSession);
             if (parsed.user?.isPinChild) {
                 state.user = parsed.user;
-                state.children = parsed.children;
+                state.children = parsed.children; // fallback cache pendant le chargement
+
+                // Recharger les enfants frais depuis Supabase pour ne pas afficher un cache stale
+                try {
+                    const { data: freshData, error: freshError } = await supabase.functions.invoke('get-children', {
+                        headers: {
+                            'x-family-pin': parsed.user.familyPin,
+                            'x-parent-id': parsed.user.id,
+                        }
+                    });
+                    if (!freshError && freshData?.children) {
+                        state.children = freshData.children;
+                        localStorage.setItem('mindking-pin-session', JSON.stringify({
+                            user: state.user,
+                            children: state.children
+                        }));
+                        console.log('[Boot] enfants rechargés depuis Supabase:', state.children.length);
+                    } else {
+                        console.warn('[Boot] get-children échoué, fallback cache:', freshError);
+                    }
+                } catch (e) {
+                    console.warn('[Boot] get-children exception, fallback cache:', e);
+                }
+
                 // Restaurer l'enfant sélectionné
                 const savedChildId = localStorage.getItem('mindking-selected-child');
                 if (savedChildId && state.children) {
