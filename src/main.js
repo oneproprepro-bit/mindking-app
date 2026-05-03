@@ -1939,6 +1939,7 @@ async function syncChildData() {
 
     try {
         if (state.user?.isPinChild) {
+            console.log('[SYNC] isPinChild:', state.user?.isPinChild, 'familyPin:', !!state.user?.familyPin, 'childId:', state.selectedChild?.id)
             const { error } = await supabase.functions.invoke('sync-child', {
                 body: dataToSync,
                 headers: {
