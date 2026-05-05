@@ -691,6 +691,21 @@ body {
     }
 }
 
+@keyframes heartbeatSlow {
+
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    40% {
+        transform: scale(1.06);
+    }
+
+    60% {
+        transform: scale(1.04);
+    }
+}
+
 .orbs-island {
     display: flex;
     gap: 40px;
@@ -1486,14 +1501,14 @@ body {
 }
 
 .ecrin-current {
-    background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(20px);
-    border: 0.5px solid rgba(255,255,255,0.6);
+    background: transparent;
+    backdrop-filter: none;
+    border: none;
     border-radius: 24px;
     padding: 24px;
     text-align: center;
     margin-bottom: 24px;
-    box-shadow: 0 10px 30px var(--shadow);
+    box-shadow: none;
 }
 
 .ecrin-current-emoji {
@@ -2116,13 +2131,13 @@ body {
 .btn-souffle {
     background: linear-gradient(135deg, #7b6ba1, #84a4d6);
     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    border-radius: 14px 0 0 14px;
+    border-radius: 0 14px 14px 0;
 }
 
 .btn-forge {
     background: linear-gradient(135deg, #d48b70, #e9c349);
     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    border-radius: 0 14px 14px 0;
+    border-radius: 14px 0 0 14px;
 }
 
 .home-btn-divider {

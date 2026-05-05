@@ -38,6 +38,9 @@ const MAX_STATE_BY_GRADE = {
 
 const HEARTS_ORDER = ['frozen', 'cold', 'awakening', 'incandescent', 'forge', 'ka'];
 
+const AVATAR_EMOJIS_FREE = ['🦊', '🐺', '🌙', '⚡'];
+const AVATAR_EMOJIS_ALL  = ['🧙‍♂️','🧝‍♀️','🦸','🧚','🐉','🦊','🌟','🦄','🧜‍♀️','🧞','🦅','🐺','🌙','⚡','🔮','🏹','🛡️','👑','🌊','🔥'];
+
 const TEMP_GAINS = {
     focus_15: 30, focus_30: 60, focus_45: 90,
     coherence: 100, vague_zen: 60, stop_panique: 20
@@ -101,6 +104,7 @@ const state = {
     user: null,
     children: null, 
     selectedChild: null,
+    avatarPickerOpen: false,
     authLoading: false,
     authError: null,
     pinScreen: false,
@@ -179,19 +183,11 @@ const FORGE_DURATIONS = {
 };
 const FORGE_COOLDOWN = 5 * 60;  // 5min cooldown
 
-const heartMessages = {
-    frozen: { icon: '(•)', text: 'Respirer pour dégeler — Perle requise' },
-    cold: { icon: '◇', text: 'Démarrer la Culture (+1 XP/min)' },
-    awakening: { icon: '🔥', text: 'Braise en formation... continuez !' },
-    incandescent: { icon: '💥', text: 'Braise en formation... continuez !' },
-    forge: { icon: '☀️', text: 'Forge accomplie — Braise générée !' },
-    ka: { icon: '🌌', text: 'Mode KA actif — +20% XP 🔥' },
-};
 
 const souffleExercises = {
-    stop_panique: { name: 'Stop Panique', rythm: '4s / 2s / 6s', duration: getDuration(60, 10), xp: 10, inhale: 4, hold: 2, exhale: 6, color: 'var(--color-stop-panique)', perles: 0.5, cooldown: 0, maxPerDay: Infinity, desc: 'Ancrez-vous dans le calme' },
-    vague_zen: { name: 'Vague Zen', rythm: '4s / 7s', duration: getDuration(180, 30), xp: 30, inhale: 4, hold: 0, exhale: 7, color: 'var(--color-vague-zen)', perles: 0.5, cooldown: 0, maxPerDay: 2, desc: 'Surfez la vague de sérénité' },
-    coherence: { name: 'Cohérence Cardiaque', rythm: '5s / 5s', duration: getDuration(300, 50), xp: 50, inhale: 5, hold: 0, exhale: 5, color: 'var(--color-coherence)', perles: 1, cooldown: 3.5 * 60 * 60 * 1000, maxPerDay: Infinity, desc: 'Inspirez… Expirez… en harmonie' },
+    stop_panique: { name: 'Stop Panique', rythm: '4s / 2s / 6s', duration: getDuration(60, 10), xp: 10, inhale: 4, hold: 2, exhale: 6, color: 'var(--color-stop-panique)', perles: 0.5, cooldown: 0, maxPerDay: Infinity, desc: 'Ancre-toi dans le calme' },
+    vague_zen: { name: 'Vague Zen', rythm: '4s / 7s', duration: getDuration(180, 30), xp: 30, inhale: 4, hold: 0, exhale: 7, color: 'var(--color-vague-zen)', perles: 0.5, cooldown: 0, maxPerDay: 2, desc: 'Surfe la vague de sérénité' },
+    coherence: { name: 'Cohérence Cardiaque', rythm: '5s / 5s', duration: getDuration(300, 50), xp: 50, inhale: 5, hold: 0, exhale: 5, color: 'var(--color-coherence)', perles: 1, cooldown: 3.5 * 60 * 60 * 1000, maxPerDay: Infinity, desc: 'Inspire… Expire… en harmonie' },
 };
 
 function toggleBackground() {
@@ -515,14 +511,14 @@ function renderSelection() {
     <div class="selection-screen">
       <div class="selection-header" style="position: relative;">
         <h1 class="selection-title">Qui va pratiquer ?</h1>
-        <p class="selection-subtitle">Choisissez un profil pour commencer</p>
+        <p class="selection-subtitle">Choisis un profil pour commencer</p>
         <button class="btn-settings-icon" onclick="showSettings()" title="Paramètres">⚙️</button>
       </div>
 
       <div class="children-grid">
         ${state.children.map(c => `
           <button class="child-card" onclick="selectChild('${c.id}')" aria-label="Sélectionner ${escapeHtml(c.name)}">
-            <div class="child-avatar">${c.gender === 'boy' ? '🤴' : '👸'}</div>
+            <div class="child-avatar">${c.avatar || (c.gender === 'boy' ? '🤴' : '👸')}</div>
             <div class="child-meta">
               <span class="child-name">${escapeHtml(c.name)}</span>
               <span class="child-grade">${getGradeName(c.grade)} · ${c.xp} XP</span>
@@ -683,10 +679,49 @@ function attachSettingsPinHandlers() {
 }
 
 // ═══════ RENDER: HOME ═══════
+function getNextStateInfo() {
+    if (state.heartState === 'frozen' || state.heartState === 'ka') return null;
+    const currentIdx = HEARTS_ORDER.indexOf(state.heartState);
+    if (currentIdx === -1 || currentIdx >= HEARTS_ORDER.length - 1) return null;
+    const nextState = HEARTS_ORDER[currentIdx + 1];
+    const threshold = STATE_BY_TEMP.find(s => s.state === nextState);
+    const tempNeeded = threshold ? threshold.min : 0;
+    const maxState = MAX_STATE_BY_GRADE[getGradeString()];
+    const maxIdx = HEARTS_ORDER.indexOf(maxState);
+    const STATE_DISPLAY = { cold: 'Froid', awakening: 'Réveil', incandescent: 'Incandescent', forge: 'Forge', ka: 'KA' };
+    const GRADE_FOR_STATE = { incandescent: 'Disciple', forge: 'Alchimiste', ka: 'Maître KA' };
+    return {
+        name: STATE_DISPLAY[nextState] || nextState,
+        temp: tempNeeded,
+        gradeLabel: (currentIdx + 1) > maxIdx ? (GRADE_FOR_STATE[nextState] || null) : null,
+    };
+}
+
 function renderHome() {
-    const cls = `state-${state.heartState}`;
-    const msg = heartMessages[state.heartState] || heartMessages.cold;
+    const hs = state.heartState;
+    const cls = `state-${hs}`;
     const xpD = getXpDisplay();
+    const heartImages = {
+        frozen: new URL('./assets/Coeur/coeurgélée_trp.webp', import.meta.url).href,
+        cold: new URL('./assets/Coeur/coeurfroid_trp.webp', import.meta.url).href,
+        awakening: new URL('./assets/Coeur/coeurréveil_trp.webp', import.meta.url).href,
+        incandescent: new URL('./assets/Coeur/coeurIncandescent_trp.webp', import.meta.url).href,
+        forge: new URL('./assets/Coeur/coeurForge_trp.webp', import.meta.url).href,
+        ka: new URL('./assets/Coeur/coeurKA_trp.webp', import.meta.url).href,
+    };
+    const nsi = getNextStateInfo();
+    const heartInfoBlock = (state.heartState !== 'frozen' && nsi !== null) ? (() => {
+        const nextLine = nsi.name
+            ? `Prochain : ${nsi.name} à ${nsi.temp}°C${nsi.gradeLabel ? ` (${nsi.gradeLabel} requis)` : ''}`
+            : 'État maximum atteint';
+        return `<div style="padding: 10px 16px; width: 90%; max-width: 350px; margin: 8px auto 0; text-align: center; font-size: 12px; color: var(--anchor); font-weight: 700; line-height: 1.9;">
+      🌡️ <span style="color: var(--royal-gold);">${Math.round(state.temperature)}°C</span> — Réserve : <span style="color: var(--royal-gold);">${Math.round(state.temperature_reserve)}°C</span><br/>
+      <span style="font-weight: 500; font-size: 11px;">${nextLine}</span>
+    </div>`;
+    })() : (state.heartState !== 'frozen' ? `<div style="padding: 10px 16px; width: 90%; max-width: 350px; margin: 8px auto 0; text-align: center; font-size: 12px; color: var(--anchor); font-weight: 700; line-height: 1.9;">
+      🌡️ <span style="color: var(--royal-gold);">${Math.round(state.temperature)}°C</span> — Réserve : <span style="color: var(--royal-gold);">${Math.round(state.temperature_reserve)}°C</span><br/>
+      <span style="font-weight: 500; font-size: 11px;">État maximum atteint</span>
+    </div>` : '');
     
     // Sécurité sur l'image de fond
     const bgUrl = state.selectedBackground === 'neutre' ? fondHomeNeutre : fondHome;
@@ -699,9 +734,9 @@ function renderHome() {
       <div class="top-bar glass-profile-card">
         <div class="home-header">
           <div class="profile-info">
-            <div class="avatar-wrap" style="width: 40px; height: 40px; margin-bottom: 0;">
-              <img src="/avatar.webp" alt="Avatar" style="width: 100%; height: 100%;" />
-            </div>
+            <button id="avatar-toggle" style="width:40px;height:40px;margin-bottom:0;cursor:pointer;font-size:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,0.35);flex-shrink:0;border:none;padding:0;">
+              ${state.selectedChild?.avatar || '🦊'}
+            </button>
             <div class="name-grade" style="font-weight: 800; font-size: 14px; color: var(--anchor); text-transform: uppercase; letter-spacing: 0.5px;">
               ${state.selectedChild ? state.selectedChild.name : 'MINDKING'} | <span style="color: var(--royal-gold);">${getGradeName(getGradeString())}</span>
             </div>
@@ -734,25 +769,42 @@ function renderHome() {
           </div>
         </div>
       </div>
-      
+
+      ${state.avatarPickerOpen ? `
+      <div style="background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:12px 14px;width:90%;max-width:350px;margin:8px auto 0;text-align:center;">
+        <div style="font-size:11px;font-weight:800;color:var(--anchor);margin-bottom:10px;letter-spacing:0.5px;">CHOISIS TON AVATAR</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+          ${AVATAR_EMOJIS_ALL.map(e => {
+            const locked = state.plan === 'free' && !AVATAR_EMOJIS_FREE.includes(e);
+            const selected = (state.selectedChild?.avatar || '🦊') === e;
+            return `<button data-avatar="${e}" data-locked="${locked}" style="width:40px;height:40px;font-size:22px;border:2px solid ${selected ? 'var(--royal-gold)' : 'transparent'};border-radius:10px;background:${selected ? 'rgba(255,200,50,0.15)' : 'rgba(0,0,0,0.04)'};cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;">
+              ${locked ? `<span style="opacity:0.35">${e}</span><span style="position:absolute;font-size:9px;bottom:1px;right:2px;">🔒</span>` : e}
+            </button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="center-zone home-hero" style="margin-top: 10px;">
         <div class="heart-stage-row floating">
-          <div class="heart-stage ${cls}"><img src="${logoMindking}" alt="MindKing" class="logo-crown" style="width: 320px; height: auto; animation: crownFloat 6s ease-in-out infinite;" /></div>
+          <div class="heart-stage ${cls}"><img src="${heartImages[hs]}" alt="Cœur" style="width: 210px; height: auto; animation: heartbeatSlow 6s ease-in-out infinite;" /></div>
         </div>
-        
+
+        ${heartInfoBlock}
+
         <div class="home-actions-pill">
-          <button class="home-btn-half btn-souffle" id="orb-breathe" title="Respirer">
-            <img src="${orbeSouffle}" class="home-btn-icon-img" alt="Souffle" /> SOUFFLE
+          <button class="home-btn-half btn-forge" id="orb-forge" title="Forger">
+            <img src="${orbeForge}" class="home-btn-icon-img" alt="Forge" /> FORGE
           </button>
           <div class="home-btn-divider"></div>
-          <button class="home-btn-half btn-forge" id="orb-forge" title="Forger">
-            FORGE <img src="${orbeForge}" class="home-btn-icon-img" alt="Forge" />
+          <button class="home-btn-half btn-souffle" id="orb-breathe" title="Respirer">
+            SOUFFLE <img src="${orbeSouffle}" class="home-btn-icon-img" alt="Souffle" />
           </button>
         </div>
 
-        <div class="context-message" style="background: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.6); margin-top: 20px; margin-bottom: 90px; width: 90%; max-width: 350px;">
-          <span class="ctx-icon">${msg.icon}</span>${msg.text}
+        <div class="heart-stage state-${hs}" style="width:120px; margin: 8px auto; animation: crownFloat 4s ease-in-out infinite; position: relative; top: -55px;">
+          <img src="${logoMindking}" style="width:120px;" />
         </div>
+
       </div>
     </div>`;
 }
@@ -865,7 +917,7 @@ function renderForge() {
           </div>
           <div style="text-align:center; margin: 40px 0; font-family:'Nunito',sans-serif;">
             <div style="font-size:48px; font-weight:900; color: var(--color-gel, #FF6B35);">${remainMin} min</div>
-            <div style="font-size:14px; color: var(--color-cool-text); margin-top:8px;">Reposez votre esprit</div>
+            <div style="font-size:14px; color: var(--color-cool-text); margin-top:8px;">Repose ton esprit</div>
           </div>
           <div style="text-align:center; margin-top:16px;">
             <button class="btn-pill btn-outline" id="forge-back-home">Retour</button>
@@ -873,7 +925,7 @@ function renderForge() {
         </div>`;
         }
         return `
-      <div class="page-content forge-container" style="background-image: url('${fondHome}'); background-size: cover; background-position: center;">
+      <div class="page-content forge-container" style="background-image: url('${state.selectedBackground === 'neutre' ? fondHomeNeutre : fondHome}'); background-size: cover; background-position: center;">
         <img src="${logoMindking}" class="main-logo" alt="Logo MindKing" />
 
         <div class="forge-title-section">
@@ -882,7 +934,7 @@ function renderForge() {
           ${state.kaActive ? '<div style="background:var(--color-or); color:white; padding:4px 12px; border-radius:12px; font-weight:bold; font-size:12px; display:inline-block; margin-top:10px;">🌟 MODE KA ACTIF (+20% XP)</div>' : ''}
         </div>
 
-        <div class="braise-status-label" style="text-align: center; margin-top: 20px;">CHOISISSEZ VOTRE DURÉE</div>
+        <div class="braise-status-label" style="text-align: center; margin-top: 20px;">CHOISIS TA DURÉE</div>
         
         <div class="forge-choices">
           <div class="forge-choice-card" id="forge-choice-15">
@@ -913,7 +965,8 @@ function renderForge() {
               <span class="forge-choice-desc">Session profonde</span>
             </div>
             <div class="forge-choice-right">
-              <span class="forge-choice-gains">+45 XP • 1 Braise • ½ Perle</span>
+              <span class="forge-choice-gains">+45 XP</span>
+              <span class="forge-choice-gains">1 Braise • ½ Perle</span>
               <span class="forge-choice-temp">+90°C</span>
             </div>
           </div>
@@ -931,7 +984,7 @@ function renderForge() {
         const rankNames = { neophyte: 'Néophyte', disciple: 'Disciple', alchimiste: 'Alchimiste', maitre_ka: 'Maître KA', ka_1: 'KA I', ka_2: 'KA II', ka_3: 'KA III' };
         const rank = rankNames[getGradeString()] || 'Alchimiste';
         return `
-      <div class="page-content forge-container" style="background-image: url('${fondHome}'); background-size: cover; background-position: center;">
+      <div class="page-content forge-container" style="background-image: url('${state.selectedBackground === 'neutre' ? fondHomeNeutre : fondHome}'); background-size: cover; background-position: center;">
         <img src="${logoMindking}" class="main-logo" alt="Logo MindKing" />
         <div class="forge-title-section">
           <h1 class="alchemic-title" style="font-size: 24px;">FORGE ACCOMPLIE</h1>
@@ -1015,7 +1068,7 @@ function renderForge() {
             <button class="btn-pill btn-danger" id="forge-abandon">Abandonner</button>
           </div>`
         }
-        ${active ? `<div class="forge-warning-text">VOTRE BRAISE SERA PERDUE <br/> SI VOUS ABANDONNEZ</div>` : ''}
+        ${active ? `<div class="forge-warning-text">TA BRAISE SERA PERDUE <br/> SI TU ABANDONNES</div>` : ''}
       </div>
     </div>`;
 }
@@ -1075,7 +1128,7 @@ function renderSouffle() {
     // 1. PHASE: SÉLECTION (Si aucun exercice choisi)
     if (!type) {
         return `
-      <div class="page-content souffle-container-immersive" style="background-image: url('${fondHome}'); background-size: cover; background-position: center;">
+      <div class="page-content souffle-container-immersive" style="background-image: url('${state.selectedBackground === 'neutre' ? fondHomeNeutre : fondHome}'); background-size: cover; background-position: center;">
         <img src="${logoMindking}" class="main-logo" alt="Logo MindKing" style="pointer-events: none;" />
         <div class="souffle-title-section" style="pointer-events: none; position: relative; z-index: 1;">
           <h1 class="souffle-alchemic-title">LE SOUFFLE</h1>
@@ -1083,7 +1136,7 @@ function renderSouffle() {
           ${state.kaActive ? '<div style="background:var(--color-or); color:white; padding:4px 12px; border-radius:12px; font-weight:bold; font-size:12px; display:inline-block; margin-top:10px;">🌟 MODE KA ACTIF (+20% XP)</div>' : ''}
         </div>
         <div class="souffle-selection-phase">
-          <div class="souffle-status-label">CHOISISSEZ VOTRE RYTHME</div>
+          <div class="souffle-status-label">CHOISIS TON RYTHME</div>
           <div class="souffle-exercises-grid">
             ${Object.entries(souffleExercises).map(([key, ex]) => {
             let gainsText = `+${ex.xp} XP`;
@@ -1144,7 +1197,7 @@ function renderSouffle() {
     `;
 
     if (active) {
-        const label = state.soufflePhase === 'inhale' ? 'INSPIRER' : (state.soufflePhase === 'hold' ? 'BLOQUER' : 'EXPIRER');
+        const label = state.soufflePhase === 'inhale' ? 'INSPIRE' : (state.soufflePhase === 'hold' ? 'BLOQUE' : 'EXPIRE');
 
         const phaseDur = state.soufflePhase === 'inhale' ? exercise.inhale : (state.soufflePhase === 'hold' ? exercise.hold : exercise.exhale);
         const phaseRemaining = Math.max(0, phaseDur - state.soufflePhaseSeconds);
@@ -1173,7 +1226,7 @@ function renderSouffle() {
     }
 
     return `
-    <div class="page-content souffle-container-immersive" style="background-image: url('${fondHome}'); background-size: cover; background-position: center;">
+    <div class="page-content souffle-container-immersive" style="background-image: url('${state.selectedBackground === 'neutre' ? fondHomeNeutre : fondHome}'); background-size: cover; background-position: center;">
       <img src="${logoMindking}" class="main-logo" alt="Logo MindKing" style="pointer-events: none;" />
 
       <div class="souffle-title-section" style="pointer-events: none; position: relative; z-index: 1;">
@@ -1259,7 +1312,7 @@ function renderEcrin() {
     const canThaw = hs === 'frozen' && state.mercuryQty > 0;
 
     return `
-    <div class="page-content" style="background-image: url('${fondHome}'); background-size: cover; background-position: center;">
+    <div class="page-content" style="background-image: url('${state.selectedBackground === 'neutre' ? fondHomeNeutre : fondHome}'); background-size: cover; background-position: center;">
       <div class="ecrin-screen">
         <div class="ecrin-header">
           <span class="ecrin-title">❤️ L'Écrin</span>
@@ -1267,9 +1320,9 @@ function renderEcrin() {
         </div>
 
         <!-- Current Heart State -->
-        <div class="ecrin-current" style="background: ${current.bg}">
+        <div class="ecrin-current" style="background: transparent">
           <div class="ecrin-current-image" style="display: flex; justify-content: center; padding: 20px 0;">
-            <img src="${heartImages[hs]}" style="width: 220px; height: auto;" />
+            <img src="${heartImages[hs]}" style="width: 220px; height: auto; animation: heartbeatSlow 6s ease-in-out infinite;" />
           </div>
           <div class="ecrin-current-name">${current.name}</div>
           <div class="ecrin-current-desc">${current.desc}</div>
@@ -1278,7 +1331,7 @@ function renderEcrin() {
           ${canThaw ? `<button class="ecrin-thaw-btn" id="thaw-btn">
             <img src="/pearl.webp" alt="Perle" class="ecrin-thaw-pearl" /> Consommer 1 Perle — Dégeler
           </button>` : ''}
-          ${hs === 'frozen' && !canThaw ? `<div class="ecrin-no-pearl">Aucune Perle disponible — Respirez pour en gagner</div>` : ''}
+          ${hs === 'frozen' && !canThaw ? `<div class="ecrin-no-pearl">Aucune Perle disponible — Respire pour en gagner</div>` : ''}
         </div>
 
         ${!state.kaActive ? `
@@ -1606,7 +1659,7 @@ function updateSouffleDisplay() {
 
     const phaseDur = state.soufflePhase === 'inhale' ? exercise.inhale : (state.soufflePhase === 'hold' ? exercise.hold : exercise.exhale);
     const phaseRemaining = Math.max(0, phaseDur - state.soufflePhaseSeconds);
-    const phaseLabelText = state.soufflePhase === 'inhale' ? 'INSPIRER' : (state.soufflePhase === 'hold' ? 'BLOQUER' : 'EXPIRER');
+    const phaseLabelText = state.soufflePhase === 'inhale' ? 'INSPIRE' : (state.soufflePhase === 'hold' ? 'BLOQUE' : 'EXPIRE');
 
     const contentWrap = app.querySelector('.orb-timer-content');
     if (contentWrap) {
@@ -1784,6 +1837,7 @@ async function handleLogin() {
             state.authError = error.message;
         } else {
             state.user = data.user;
+            await loadUserPlan();
             await loadChildren();
         }
     } catch (err) {
@@ -1832,6 +1886,16 @@ async function handleSignup() {
     }
     state.authLoading = false;
     render();
+}
+
+async function loadUserPlan() {
+    if (!state.user?.id) return;
+    const { data: userData } = await supabase
+        .from('users')
+        .select('plan')
+        .eq('id', state.user.id)
+        .single();
+    state.plan = userData?.plan || 'free';
 }
 
 async function loadChildren() {
@@ -1929,6 +1993,7 @@ async function syncChildData() {
         braises_half: state.sulfurHalf || 0,
         coherence_cooldown_until: state.souffleCoherenceLastTime ? new Date(state.souffleCoherenceLastTime).toISOString() : null,
         background_pref: state.selectedBackground,
+        avatar: state.selectedChild.avatar || null,
         onboarded: state.selectedChild.onboarded ?? false,
         last_connection: new Date().toISOString()
     };
@@ -2304,6 +2369,22 @@ function render() {
         if (id === 'orb-forge' || id === 'home-forge-btn') { state.activeTab = 'forge'; render(); return; }
         if (id === 'orb-breathe' || id === 'home-breathe-btn') { state.activeTab = 'souffle'; render(); return; }
         if (id === 'toggle-bg') { toggleBackground(); return; }
+        if (id === 'avatar-toggle') { state.avatarPickerOpen = !state.avatarPickerOpen; render(); return; }
+
+        const avatarBtn = target.closest('[data-avatar]');
+        if (avatarBtn) {
+            if (avatarBtn.dataset.locked === 'true') {
+                showToast('Disponible avec le plan Famille');
+                return;
+            }
+            if (state.selectedChild) {
+                state.selectedChild.avatar = avatarBtn.dataset.avatar;
+                state.avatarPickerOpen = false;
+                syncChildData();
+                render();
+            }
+            return;
+        }
 
         // Forge actions
         const forgeCard = e.target.closest('.forge-choice-card');
@@ -2480,6 +2561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (initialSession) {
         state.user = initialSession.user;
+        await loadUserPlan();
         if (state.children === null) {
             await loadChildren();
         }
@@ -2508,6 +2590,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (state.user?.isPinChild) return;
         if (session && !state.user) {
             state.user = session.user;
+            await loadUserPlan();
             if (state.children === null) await loadChildren();
             const savedChildId = localStorage.getItem('mindking-selected-child');
             if (savedChildId && state.children) {
